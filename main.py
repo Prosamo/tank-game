@@ -49,18 +49,19 @@ class Stick:
             self.inner_y = self.r
 
 class Button:
-    def __init__(self, x, y, r):
+    def __init__(self, x, y, r, color = (128, 182, 255)):
         self.x = x
         self.y = y
         self.r = r
         self.width = self.r*2
         self.height = self.r*2
+        self.color = color
     def draw(self):
         # 透明な土台を設定
         alpha_surface = pygame.Surface((self.r*2, self.r*2), pygame.SRCALPHA)
         alpha_surface.fill((0, 0, 0, 0))
         #青い円
-        pygame.draw.circle(alpha_surface, (128, 128, 255, 128), (self.r, self.r), self.r)
+        pygame.draw.circle(alpha_surface, (*self.color, 128), (self.r, self.r), self.r)
         #白い枠線
         pygame.draw.circle(alpha_surface, (255, 255, 255, 128), (self.r, self.r), self.r, 2)
         #描画
@@ -101,13 +102,15 @@ class Tank:
     def draw(self):
         screen.blit(self.image, self.rect.topleft)
     def update(self, angle):
-        current_time = time.time()
-        if current_time - self.last_charge_time >= 1:
-            self.ball = min(5, self.ball+1)
-            self.last_charge_time = current_time
+        self.charge()
         self.angle = angle
         self.image = pygame.transform.rotate(tank_image, -math.degrees(self.angle))
         self.rect = self.image.get_rect(center=(self.x, self.y))
+    def charge(self):
+        current_time = time.time()
+        if current_time - self.last_charge_time >= 1.1:
+            self.ball = min(5, self.ball+1)
+            self.last_charge_time = current_time
     def move(self): # 戦車の位置を角度に基づいて更新
         self.x += self.speed * math.cos(self.angle)
         self.x = min(max(self.x, 8), 248)
@@ -117,6 +120,11 @@ class Tank:
         if self.ball >= 1:
             self.ball -= 1
             Ball(self.x, self.y, self.angle)
+    def fire(self):
+        if self.ball >= 5:
+            self.ball -=5
+            Beam(self.x, self.y, self.angle)
+            game.start_shake(10)
 class ETank:
     tanks = []
     def __init__(self, x, y, target_x, target_y):
@@ -196,6 +204,69 @@ class EBall(Ball):
             result.update(game.score)
             result.mode = True
 
+# ビームクラスの定義
+class Beam:
+    beams = []
+    def __init__(self, x, y, angle):
+        self.x, self.y = x, y
+        self.angle = angle
+        self.length = 0
+        self.max_length = 384
+        self.life = 60  # ビームの寿命（フレーム数）
+        self.alpha = 255  # 初期の透明度
+        self.get_rect()
+        Beam.beams.append(self)
+    
+    def update(self):
+        self.get_rect()
+        if self.length < self.max_length:
+            self.length += 20
+        self.life -= 1
+        if self.life < 50:  # 寿命の半分を過ぎたら徐々に透明にする
+            self.alpha = int(255 * (self.life / 50))
+    
+    def draw(self, ):
+        if self.life <= 0:
+            Beam.beams.remove(self)
+        end_pos = (self.x + self.length * math.cos(self.angle),
+                   self.y + self.length * math.sin(self.angle))
+        beam_surface = pygame.Surface((256, 256), pygame.SRCALPHA)
+        # 青白い発光を描画
+        pygame.draw.line(beam_surface, (0, 192, 255, self.alpha // 1.5), (self.x, self.y), end_pos, 15)
+        # 白いビームを描画
+        pygame.draw.line(beam_surface, (255, 255, 255, self.alpha), (self.x, self.y), end_pos, 5)
+        screen.blit(beam_surface, (0, 0))
+
+    def get_rect(self):
+        self.rect = pygame.Rect(self.x + self.length * math.cos(self.angle),
+                     self.y + self.length * math.sin(self.angle),
+                     16, 16)
+    
+    def check_collision(self):
+        for enemy in ETank.tanks:
+            if self.rect.colliderect(enemy.rect):
+                ETank.tanks.remove(enemy)
+                game.score+=300
+        for e_ball in EBall.balls:
+            if self.rect.colliderect(e_ball.rect):
+                EBall.balls.remove(e_ball)
+
+class Shake:
+    def __init__(self):
+        self.score = 0
+        self.shake_duration = 0
+        self.shake_offset = (0, 0)
+    
+    def start_shake(self, duration):
+        self.shake_duration = duration
+    
+    def update_shake(self):
+        if self.shake_duration > 0:
+            self.shake_duration -= 1
+            self.shake_offset = (random.randint(-5, 5), random.randint(-5, 5))
+        else:
+            self.shake_offset = (0, 0)
+
 class Game:
     def __init__(self):
         self.last_time = time.time()
@@ -206,6 +277,21 @@ class Game:
         ETank.tanks = []
         EBall.balls = []
         Ball.balls = []
+        Beam.beams = []
+
+        self.shake_duration = 0
+        self.shake_offset = (0, 0)
+        
+    def start_shake(self, duration):
+        self.shake_duration = duration
+    
+    def update_shake(self):
+        if self.shake_duration > 0:
+            self.shake_duration -= 1
+            self.shake_offset = (random.randint(-2, 2), random.randint(-2, 2))
+        else:
+            self.shake_offset = (0, 0)
+            
     def process(self):
         screen.fill((255, 224, 160))
         game.score += 0.3
@@ -232,6 +318,10 @@ class Game:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 if shoot_button.pressed(mouse_x, mouse_y):
                     self.tank.shoot()
+                if fire_button.pressed(mouse_x, mouse_y):
+                    self.tank.fire()
+                    
+        self.update_shake()
         mouse_x, mouse_y = pygame.mouse.get_pos()
         stick.update(mouse_x, mouse_y)
         gauge.update(self.tank.ball/5)
@@ -250,11 +340,18 @@ class Game:
             i.update()
             i.draw()
             i.check_collision(self.tank)
+        # ビームの更新と描画
+        for i in Beam.beams:
+            i.update()
+            i.draw()
+            i.check_collision()
         stick.draw()
         shoot_button.draw()
+        fire_button.draw()
         gauge.draw()
         text = font.render(f'Score:{int(self.score)}', True, (0, 0, 0))
         screen.blit(text, (184, 8))
+        screen.blit(screen, self.shake_offset)
 class Result:
     def __init__(self, score):
         self.font = pygame.font.SysFont('', 32)
@@ -300,6 +397,7 @@ def vocalize(a):
     sound_key.play()
 stick = Stick(40, 184, 20)
 shoot_button = Button(184, 184, 20)
+fire_button = Button(184, 128, 20, color = (255, 128, 128))
 gauge = Gauge(232, 88, 16, 80)
 game = Game()
 result = Result(0)
