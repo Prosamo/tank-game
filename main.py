@@ -61,6 +61,8 @@ class Button:
         alpha_surface.fill((0, 0, 0, 0))
         #青い円
         pygame.draw.circle(alpha_surface, (128, 128, 255, 128), (self.r, self.r), self.r)
+        #白い枠線
+        pygame.draw.circle(alpha_surface, (255, 255, 255, 128), (self.r, self.r), self.r, 2)
         #描画
         screen.blit(alpha_surface, (self.x,self.y))
     def pressed(self, mouse_x, mouse_y):
@@ -78,8 +80,10 @@ class Gauge:
         # 透明な土台を設定
         alpha_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         alpha_surface.fill((0, 0, 0, 64))
-        #青い円
+        #緑の四角
         pygame.draw.rect(alpha_surface, (128, 255, 128, 128), (0, self.height*(1-self.rate), self.width, self.height))
+        #枠線
+        pygame.draw.rect(alpha_surface, (255, 255, 255, 128), (0, 0, self.width, self.height), 2)
         #描画
         screen.blit(alpha_surface, (self.x, self.y))
     def update(self, rate):
@@ -279,7 +283,7 @@ class Result:
         text3 = self.font.render(f'Touch To Restart', True, (0, 0, 0))
         screen.blit(text, (32, 32))
         screen.blit(text2, (32, 64))
-        screen.blit(text3, (32, 224))
+        screen.blit(text3, (32, 216))
 async def main():
     while True:
         if game.mode:
@@ -294,9 +298,9 @@ def vocalize(a):
     pygame.mixer.set_num_channels(32)
     sound_key = pygame.mixer.Sound(a)
     sound_key.play()
-stick = Stick(24, 200, 16)
-shoot_button = Button(200, 200, 16)
-gauge = Gauge(232, 100, 16, 80)
+stick = Stick(40, 184, 20)
+shoot_button = Button(184, 184, 20)
+gauge = Gauge(232, 88, 16, 80)
 game = Game()
 result = Result(0)
 
