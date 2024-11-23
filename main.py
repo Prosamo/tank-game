@@ -161,10 +161,10 @@ class Ball:
         self.rect = self.image.get_rect(center=(self.x, self.y))
 
     def draw(self):
-        if 0 >= self.x >= 256 or 0 >= self.y >= 256:
-            Ball.balls.remove(self)
+        if 0 <= self.x <= 256 and 0 <= self.y <= 256:
+            screen.blit(self.image, (self.x, self.y))
             return
-        screen.blit(self.image, (self.x, self.y))
+        Ball.balls.remove(self)
 
     def check_collision(self):
         for enemy in ETank.tanks:
@@ -186,10 +186,10 @@ class EBall(Ball):
     def update(self):
         super().update()
     def draw(self):
-        if 0 >= self.x >= 256 or 0 >= self.y >= 256:
-            EBall.balls.remove(self)
+        if 0 <= self.x <= 256 and 0 <= self.y <= 256:
+            screen.blit(self.image, (self.x, self.y))
             return
-        screen.blit(self.image, (self.x, self.y))
+        EBall.balls.remove(self)
     def check_collision(self, enemy):
         if self.rect.colliderect(enemy.rect):
             game.mode = False
