@@ -238,8 +238,8 @@ class Beam:
         screen.blit(beam_surface, (0, 0))
 
     def get_rect(self):
-        self.rect = pygame.Rect(self.x + self.length * math.cos(self.angle),
-                     self.y + self.length * math.sin(self.angle),
+        self.rect = pygame.Rect(self.x-8 + self.length * math.cos(self.angle),
+                     self.y-8 + self.length * math.sin(self.angle),
                      16, 16)
     
     def check_collision(self):
