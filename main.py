@@ -1,6 +1,5 @@
 import asyncio
-import pygame, sys, time, random
-import math
+import pygame, sys, time, random, math, webbrowser
 
 pygame.init()    # Pygameを初期化
 screen = pygame.display.set_mode((256, 256))    # 画面を作成
@@ -30,7 +29,7 @@ class Stick:
         alpha_surface = pygame.Surface((self.r*2, self.r*2), pygame.SRCALPHA)
         alpha_surface.fill((0, 0, 0, 0))
         #白い枠線
-        pygame.draw.circle(alpha_surface, (255, 255, 255), (self.r, self.r), self.r, self.border_width)
+        pygame.draw.circle(alpha_surface, (255, 255, 255, 128), (self.r, self.r), self.r, self.border_width)
         #灰色の丸
         pygame.draw.circle(alpha_surface, (128, 128, 128, 128), (self.inner_x, self.inner_y), self.inner_r)
         #描画
@@ -355,6 +354,7 @@ class Game:
 class Result:
     def __init__(self, score):
         self.font = pygame.font.SysFont('', 32)
+        self.font_jp = pygame.font.Font('NotoSansJP-VariableFont_wght.ttf', 16)
         self.score = 0
         self.high_score = 0
         self.mode = False
@@ -373,13 +373,22 @@ class Result:
                 game = Game()
                 self.mode = False
             if event.type == pygame.MOUSEBUTTONDOWN:  # 画面を押したとき
-                game = Game()
-                self.mode = False
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                if 80 <= mouse_y <= 136:
+                    webbrowser.open(f'https://x.com/intent/post?text=%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%E3%83%8F%E3%82%A4%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.high_score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%0A%E3%81%93%E3%81%A1%E3%82%89%E3%81%8B%E3%82%89%E9%81%8A%E3%81%B9%E3%81%BE%E3%81%99%0Ahttps%3A%2F%2Fprosamo.github.io%2Ftank-game%2F')
+                else:
+                    game = Game()
+                    self.mode = False
         text = self.font.render(f'Score:{int(self.score)}', True, (0, 0, 0))
         text2 = self.font.render(f'HighScore:{int(self.high_score)}', True, (0, 0, 0))
-        text3 = self.font.render(f'Touch To Restart', True, (0, 0, 0))
+        text3 = self.font.render('Touch To Restart', True, (0, 0, 0))
+        text_post = self.font_jp.render('X で Post', True, (0, 0, 0))
         screen.blit(text, (32, 32))
         screen.blit(text2, (32, 64))
+        screen.blit(text_post, (32, 96))
+        screen.blit(text_post, (33, 96))
+        screen.blit(text_post, (32, 97))
+        screen.blit(text_post, (33, 97))
         screen.blit(text3, (32, 216))
 async def main():
     while True:
