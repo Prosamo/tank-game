@@ -1,6 +1,6 @@
 import asyncio
 import pygame, sys, time, random, math
-from js import window
+import js
 
 pygame.init()    # Pygameを初期化
 screen = pygame.display.set_mode((256, 256))    # 画面を作成
@@ -386,7 +386,11 @@ class Result:
             if event.type == pygame.MOUSEBUTTONDOWN:  # 画面を押したとき
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 if 80 <= mouse_y <= 136:
-                    window.open(f'https://x.com/intent/post?text=%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%E3%83%8F%E3%82%A4%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.high_score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%0A%E3%81%93%E3%81%A1%E3%82%89%E3%81%8B%E3%82%89%E9%81%8A%E3%81%B9%E3%81%BE%E3%81%99%0Ahttps%3A%2F%2Fprosamo.github.io%2Ftank-game%2F', '_blank')
+                    url = f'https://x.com/intent/post?text=%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%E3%83%8F%E3%82%A4%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.high_score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%0A%E3%81%93%E3%81%A1%E3%82%89%E3%81%8B%E3%82%89%E9%81%8A%E3%81%B9%E3%81%BE%E3%81%99%0Ahttps%3A%2F%2Fprosamo.github.io%2Ftank-game%2F'
+                    #js.window.open(url, '_blank')
+                    #js.window.location.href = url
+                    button_html = f''' <a href="{url}" target="_blank" id="openLinkButton">Open Link</a> '''
+                    js.document.body.innerHTML += button_html
                 else:
                     game = Game()
                     self.mode = False
