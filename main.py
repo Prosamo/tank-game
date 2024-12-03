@@ -389,6 +389,13 @@ class Result:
                     url = f'https://x.com/intent/post?text=%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%E3%83%8F%E3%82%A4%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.high_score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%0A%E3%81%93%E3%81%A1%E3%82%89%E3%81%8B%E3%82%89%E9%81%8A%E3%81%B9%E3%81%BE%E3%81%99%0Ahttps%3A%2F%2Fprosamo.github.io%2Ftank-game%2F'
                     #js.window.open(url, '_blank')
                     #js.window.location.href = url
+                    try:
+                        link = document.getElementById('link')
+                        link.remove()
+                    except:
+                        pass
+                    button_html = f''' <a id = link href="{url}" target="_blank" id="openLinkButton">Open Link</a> '''
+                    document.body.insertAdjacentHTML('beforeend', button_html)
                     """
                     button_html = '''
                                   <div id="tmp_div" style="display:none;">
@@ -414,6 +421,7 @@ class Result:
                                   '''
                     button_html = f'{button_html}'
                     """
+                    """
                     button_html = f'''
                                   <div id = tmp_div style="display:none">
                                   <a id="tempLink" href="{url}" target="_blank" id="openLinkButton">Open Link</a>
@@ -437,14 +445,20 @@ class Result:
                     tmp_div = document.getElementById('tmp_div')
                     temp_link.click()
                     tmp_div.remove()
+                    """
                     
                 else:
+                    try:
+                        link = document.getElementById('link')
+                        link.remove()
+                    except:
+                        pass
                     game = Game()
                     self.mode = False
         text = self.font.render(f'Score:{self.score:.0f}', True, (0, 0, 0))
         text2 = self.font.render(f'HighScore:{self.high_score:.0f}', True, (0, 0, 0))
         text3 = self.font.render('Touch To Restart', True, (0, 0, 0))
-        text_post = self.font_jp.render('X で Post', True, (0, 0, 0))
+        text_post = self.font_jp.render('X で Post(左上にリンクが出ます)', True, (0, 0, 0))
         screen.blit(text, (32, 32))
         screen.blit(text2, (32, 64))
         screen.blit(text_post, (32, 96))
