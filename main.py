@@ -8,10 +8,10 @@ pygame.display.set_caption("戦車ゲーム")    # タイトルを作成
 clock = pygame.time.Clock()
 font = pygame.font.SysFont('', 16)
 
-tank_image = pygame.image.load("tank.png")
-ball_image = pygame.image.load("ball.png")
-e_tank_image = pygame.image.load("e-tank.png")
-e_ball_image = pygame.image.load("e-ball.png")
+tank_image = pygame.image.load("tank.png").convert_alpha()
+ball_image = pygame.image.load("ball.png").convert_alpha()
+e_tank_image = pygame.image.load("e-tank.png").convert_alpha()
+e_ball_image = pygame.image.load("e-ball.png").convert_alpha()
 
 class Stick:
     def __init__(self, x, y, r, border_width = 2):
@@ -94,18 +94,18 @@ class Tank:
     def __init__(self, x, y):
         self.x, self.y = x, y
         self.image = tank_image
-        self.speed = 1
+        self.speed = 1.5
         self.angle = 0
         self.ball = 5
         self.last_charge_time = time.time()
-        self.rect = self.image.get_rect(center=(self.x, self.y))
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
     def draw(self):
         screen.blit(self.image, self.rect.topleft)
     def update(self, angle):
         self.charge()
         self.angle = angle
         self.image = pygame.transform.rotate(tank_image, -math.degrees(self.angle))
-        self.rect = self.image.get_rect(center=(self.x, self.y))
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
     def charge(self):
         current_time = time.time()
         if current_time - self.last_charge_time >= 0.8:
@@ -158,7 +158,7 @@ class Ball:
         self.x = x
         self.y = y
         self.angle = angle
-        self.speed = 2
+        self.speed = 3
         self.image = ball_image
         self.rect = self.image.get_rect(center=(self.x, self.y))
         Ball.balls.append(self)
@@ -187,7 +187,7 @@ class EBall(Ball):
         self.x = x
         self.y = y
         self.angle = angle
-        self.speed = 2
+        self.speed = 3
         self.image = e_ball_image
         self.rect = self.image.get_rect(center=(self.x, self.y))
         EBall.balls.append(self)
@@ -212,7 +212,7 @@ class Beam:
         self.angle = angle
         self.length = 0
         self.max_length = 384
-        self.life = 60  # ビームの寿命（フレーム数）
+        self.life = 36  # ビームの寿命（フレーム数）
         self.alpha = 255  # 初期の透明度
         self.get_rect()
         Beam.beams.append(self)
@@ -220,7 +220,7 @@ class Beam:
     def update(self):
         self.get_rect()
         if self.length < self.max_length:
-            self.length += 20
+            self.length += 30
         self.life -= 1
         if self.life < 50:  # 寿命の半分を過ぎたら徐々に透明にする
             self.alpha = int(255 * (self.life / 50))
@@ -295,7 +295,7 @@ class Game:
             
     def process(self):
         screen.fill((255, 224, 160))
-        game.score += 0.3
+        game.score += 0.5
         if time.time() - self.last_time >= self.interval:
             ETank(random.randint(8, 248), random.randint(8, 248), self.tank.x, self.tank.y)
             if self.score >= 10000:
@@ -473,7 +473,7 @@ async def main():
         if result.mode:
             result.show()
         pygame.display.update()
-        clock.tick(50)
+        clock.tick(30)
         await asyncio.sleep(0)
 def vocalize(a):
     pygame.mixer.init(frequency=44100)
