@@ -387,11 +387,11 @@ class Result:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 if 80 <= mouse_y <= 136:
                     url = f'https://x.com/intent/post?text=%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%E3%83%8F%E3%82%A4%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.high_score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%0A%E3%81%93%E3%81%A1%E3%82%89%E3%81%8B%E3%82%89%E9%81%8A%E3%81%B9%E3%81%BE%E3%81%99%0Ahttps%3A%2F%2Fprosamo.github.io%2Ftank-game%2F'
-                    js.eval(f"window.open('{url}', '_blank')")
-                    #js.window.open(url, '_blank')
-                    #js.window.location.href = url
-                    #button_html = f''' <a href="{url}" target="_blank" id="openLinkButton">Open Link</a> '''
-                    #js.document.body.innerHTML += button_html
+                    script = f"window.open('{url}', '_blank');"
+                    document.body.insertAdjacentHTML('beforeend', f'<a id="tempLink" href="{url}" target="_blank" style="display:none;">Open</a>')
+                    temp_link = document.getElementById('tempLink')
+                    temp_link.click()
+                    temp_link.remove()
                 else:
                     game = Game()
                     self.mode = False
