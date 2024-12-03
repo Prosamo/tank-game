@@ -458,7 +458,7 @@ class Result:
         text = self.font.render(f'Score:{self.score:.0f}', True, (0, 0, 0))
         text2 = self.font.render(f'HighScore:{self.high_score:.0f}', True, (0, 0, 0))
         text3 = self.font.render('Touch To Restart', True, (0, 0, 0))
-        text_post = self.font_jp.render('X で Post(左上にリンクが出ます)', True, (0, 0, 0))
+        text_post = self.font_jp.render('XでPost(左上にリンクが出ます)', True, (0, 0, 0))
         screen.blit(text, (32, 32))
         screen.blit(text2, (32, 64))
         screen.blit(text_post, (32, 96))
