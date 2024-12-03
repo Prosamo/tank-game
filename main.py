@@ -1,5 +1,6 @@
 import asyncio
-import pygame, sys, time, random, math, webbrowser
+import pygame, sys, time, random, math
+from js import window
 
 pygame.init()    # Pygameを初期化
 screen = pygame.display.set_mode((256, 256))    # 画面を作成
@@ -59,7 +60,7 @@ class Button:
         # 透明な土台を設定
         alpha_surface = pygame.Surface((self.r*2, self.r*2), pygame.SRCALPHA)
         alpha_surface.fill((0, 0, 0, 0))
-        #青い円
+        #円
         pygame.draw.circle(alpha_surface, (*self.color, 128), (self.r, self.r), self.r)
         #白い枠線
         pygame.draw.circle(alpha_surface, (255, 255, 255, 128), (self.r, self.r), self.r, 2)
@@ -107,7 +108,7 @@ class Tank:
         self.rect = self.image.get_rect(center=(self.x, self.y))
     def charge(self):
         current_time = time.time()
-        if current_time - self.last_charge_time >= 1.1:
+        if current_time - self.last_charge_time >= 0.8:
             self.ball = min(5, self.ball+1)
             self.last_charge_time = current_time
     def move(self): # 戦車の位置を角度に基づいて更新
@@ -271,6 +272,7 @@ class Game:
         self.last_time = time.time()
         self.interval = 3
         self.mode = True
+        stick.holding = False
         self.tank = Tank(128, 128)
         self.score = 0
         ETank.tanks = []
@@ -296,7 +298,10 @@ class Game:
         game.score += 0.3
         if time.time() - self.last_time >= self.interval:
             ETank(random.randint(8, 248), random.randint(8, 248), self.tank.x, self.tank.y)
-            ETank(random.randint(8, 248), random.randint(8, 248), self.tank.x, self.tank.y)
+            if self.score >= 10000:
+                ETank(random.randint(8, 248), random.randint(8, 248), self.tank.x, self.tank.y)
+            if self.score >= 2000:
+                ETank(random.randint(8, 248), random.randint(8, 248), self.tank.x, self.tank.y)
             self.last_time = time.time()
      
         for event in pygame.event.get():
@@ -345,8 +350,14 @@ class Game:
             i.draw()
             i.check_collision()
         stick.draw()
-        shoot_button.draw()
-        fire_button.draw()
+        if self.tank.ball:
+            shoot_button.draw()
+        else:
+            shoot_dummy.draw()
+        if self.tank.ball >= 5:
+            fire_button.draw()
+        else:
+            fire_dummy.draw()
         gauge.draw()
         text = font.render(f'Score:{int(self.score)}', True, (0, 0, 0))
         screen.blit(text, (184, 8))
@@ -375,12 +386,12 @@ class Result:
             if event.type == pygame.MOUSEBUTTONDOWN:  # 画面を押したとき
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 if 80 <= mouse_y <= 136:
-                    webbrowser.open(f'https://x.com/intent/post?text=%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%E3%83%8F%E3%82%A4%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.high_score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%0A%E3%81%93%E3%81%A1%E3%82%89%E3%81%8B%E3%82%89%E9%81%8A%E3%81%B9%E3%81%BE%E3%81%99%0Ahttps%3A%2F%2Fprosamo.github.io%2Ftank-game%2F')
+                    window.open(f'https://x.com/intent/post?text=%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%E3%83%8F%E3%82%A4%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.high_score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%0A%E3%81%93%E3%81%A1%E3%82%89%E3%81%8B%E3%82%89%E9%81%8A%E3%81%B9%E3%81%BE%E3%81%99%0Ahttps%3A%2F%2Fprosamo.github.io%2Ftank-game%2F')
                 else:
                     game = Game()
                     self.mode = False
-        text = self.font.render(f'Score:{int(self.score)}', True, (0, 0, 0))
-        text2 = self.font.render(f'HighScore:{int(self.high_score)}', True, (0, 0, 0))
+        text = self.font.render(f'Score:{self.score:.0f}', True, (0, 0, 0))
+        text2 = self.font.render(f'HighScore:{self.high_score:.0f}', True, (0, 0, 0))
         text3 = self.font.render('Touch To Restart', True, (0, 0, 0))
         text_post = self.font_jp.render('X で Post', True, (0, 0, 0))
         screen.blit(text, (32, 32))
@@ -406,7 +417,9 @@ def vocalize(a):
     sound_key.play()
 stick = Stick(40, 184, 20)
 shoot_button = Button(184, 184, 20)
+shoot_dummy = Button(184, 184, 20, color = (128, 128, 128))
 fire_button = Button(184, 128, 20, color = (255, 128, 128))
+fire_dummy = Button(184, 128, 20, color = (128, 128, 128))
 gauge = Gauge(232, 88, 16, 80)
 game = Game()
 result = Result(0)
