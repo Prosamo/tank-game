@@ -386,17 +386,19 @@ class Result:
             if event.type == pygame.MOUSEBUTTONDOWN:  # 画面を押したとき
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 if 80 <= mouse_y <= 136:
-                    screen.fill((255, 0, 0))
-                    pygame.display.update()
                     url = f'https://x.com/intent/post?text=%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%E3%83%8F%E3%82%A4%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{self.high_score:.0f}%E3%81%A7%E3%81%97%E3%81%9F%EF%BC%81%0A%0A%E3%81%93%E3%81%A1%E3%82%89%E3%81%8B%E3%82%89%E9%81%8A%E3%81%B9%E3%81%BE%E3%81%99%0Ahttps%3A%2F%2Fprosamo.github.io%2Ftank-game%2F'
                     #js.window.open(url, '_blank')
                     #js.window.location.href = url
-                    """
                     button_html = f'''
-                                  <div id = tmp_div style="display:none;">
+                                  <div id = tmp_div style="display:none">
                                   <a id="tempLink" href="{url}" target="_blank" id="openLinkButton">Open Link</a>
                                   <script>
                                   document.getElementById("openLinkButton").addEventListener("click", function(event) {{
+                                      event.preventDefault();
+                                      window.open("{url}", '_blank');
+                                  }});
+                                  
+                                  document.getElementById("openLinkButton").addEventListener("touchstart", function(event) {{
                                       event.preventDefault();
                                       window.open("{url}", '_blank');
                                   }});
@@ -408,9 +410,10 @@ class Result:
                     temp_link = document.getElementById('tempLink')
                     tmp_div = document.getElementById('tmp_div')
                     temp_link.click()
+                    temp_link.touchstart()
                     tmp_div.remove()
-                    """
-
+                    
+                    '''
                     script = f"""
                              var a = document.createElement('a');
                              a.href = '{url}';
@@ -419,6 +422,7 @@ class Result:
                              a.dispatchEvent(evt);
                              """
                     js.eval(script)
+                    '''
                 else:
                     game = Game()
                     self.mode = False
