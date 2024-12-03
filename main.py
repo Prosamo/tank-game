@@ -410,7 +410,7 @@ class Result:
                     temp_link = document.getElementById('tempLink')
                     tmp_div = document.getElementById('tmp_div')
                     temp_link.click()
-                    temp_link.touchstart()
+                    temp_link.dispatchEvent(new Event('touchstart'));
                     tmp_div.remove()
                     
                     '''
