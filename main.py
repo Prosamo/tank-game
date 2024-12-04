@@ -178,7 +178,11 @@ class Ball:
         for enemy in ETank.tanks:
             if self.rect.colliderect(enemy.rect):
                 ETank.tanks.remove(enemy)
-                Ball.balls.remove(self)
+                #画面外に行くと同時に敵に当たると、二回removeされるのを防ぐため
+                try:
+                    Ball.balls.remove(self)
+                except ValueError:
+                    pass
                 game.score+=300
                 break
 class EBall(Ball):
