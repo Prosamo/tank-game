@@ -398,6 +398,7 @@ class Result:
                         link.remove()
                     except:
                         pass
+                    """
                     button_html = f''' <a id = link href="{url}" target="_blank" id="openLinkButton">Open Link</a> '''
                     document.body.insertAdjacentHTML('beforeend', button_html)
                     """
@@ -406,25 +407,22 @@ class Result:
                                     <a id="tempLink" href="{url}" target="_blank">Open Link</a>
                                     <script>
                                       document.getElementById("tempLink").addEventListener("click", function(event) {
-                                        event.preventDefault();
                                         window.open("{url}", '_blank');
                                       });
 
-                                      document.getElementById("tempLink").addEventListener("touchstart", function(event) {
-                                        event.preventDefault();
+                                      document.getElementById("tempLink").addEventListener("touchend", function(event) {
                                         window.open("{url}", '_blank');
                                       });
                                       document.body.insertAdjacentHTML('beforeend', document.getElementById('tmp_div').outerHTML);
                                       var temp_link = document.getElementById('tempLink');
                                       temp_link.click();
-                                      var touchEvent = new Event('touchstart');
+                                      var touchEvent = new Event('touchend');
                                       temp_link.dispatchEvent(touchEvent);
                                       document.getElementById('tmp_div').remove();
                                     </script>
                                   </div>
                                   '''
                     button_html = f'{button_html}'
-                    """
                     """
                     button_html = f'''
                                   <div id = tmp_div style="display:none">
