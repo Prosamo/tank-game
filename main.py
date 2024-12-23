@@ -2,6 +2,8 @@ import asyncio
 import pygame, sys, time, random, math
 import js
 
+random.seed(time.time())
+
 pygame.init()    # Pygameを初期化
 screen = pygame.display.set_mode((256, 256))    # 画面を作成
 pygame.display.set_caption("戦車ゲーム")    # タイトルを作成
