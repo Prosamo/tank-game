@@ -1,14 +1,18 @@
 import asyncio
-import pygame, sys, time, random, math
+import pygame, sys, time, random, math, copy
 import js
 
 random.seed(time.time())
 
 pygame.init()    # Pygameを初期化
-screen = pygame.display.set_mode((256, 256))    # 画面を作成
+WIDTH, HEIGHT = 256, 256
+screen = pygame.display.set_mode((WIDTH, HEIGHT))    # 画面を作成
 pygame.display.set_caption("戦車ゲーム")    # タイトルを作成
 clock = pygame.time.Clock()
 font = pygame.font.SysFont('', 16)
+
+game_window = pygame.Surface((WIDTH, HEIGHT))
+gw_pos = (0, 0)
 
 tank_image = pygame.image.load("tank.png").convert_alpha()
 ball_image = pygame.image.load("ball.png").convert_alpha()
@@ -36,7 +40,7 @@ class Stick:
         #灰色の丸
         pygame.draw.circle(alpha_surface, (128, 128, 128, 128), (self.inner_x, self.inner_y), self.inner_r)
         #描画
-        screen.blit(alpha_surface, (self.x, self.y))
+        game_window.blit(alpha_surface, (self.x, self.y))
     def update(self, mouse_x, mouse_y):
         if self.holding and mouse_x <= 128:
             dx = mouse_x - (self.x + self.r)
@@ -67,7 +71,7 @@ class Button:
         #白い枠線
         pygame.draw.circle(alpha_surface, (255, 255, 255, 128), (self.r, self.r), self.r, 2)
         #描画
-        screen.blit(alpha_surface, (self.x,self.y))
+        game_window.blit(alpha_surface, (self.x,self.y))
     def pressed(self, mouse_x, mouse_y):
         if self.x <= mouse_x <= self.x+self.width and self.y <= mouse_y <= self.y+self.height:
             return True
@@ -88,7 +92,7 @@ class Gauge:
         #枠線
         pygame.draw.rect(alpha_surface, (255, 255, 255, 128), (0, 0, self.width, self.height), 2)
         #描画
-        screen.blit(alpha_surface, (self.x, self.y))
+        game_window.blit(alpha_surface, (self.x, self.y))
     def update(self, rate):
         self.rate = rate
 
@@ -102,7 +106,7 @@ class Tank:
         self.last_charge_time = time.time()
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
     def draw(self):
-        screen.blit(self.image, self.rect.topleft)
+        game_window.blit(self.image, self.rect.topleft)
     def update(self, angle):
         self.charge()
         self.angle = angle
@@ -125,8 +129,7 @@ class Tank:
     def fire(self):
         if self.ball >= 5:
             self.ball -=5
-            Beam(self.x, self.y, self.angle)
-            game.start_shake(10)
+            Laser(self.x, self.y, self.angle)
 class ETank:
     tanks = []
     def __init__(self, x, y, target_x, target_y):
@@ -141,7 +144,7 @@ class ETank:
         self.last_time = time.time()
         self.rect = self.image.get_rect(center=(self.x, self.y))
     def draw(self):
-        screen.blit(self.image, self.rect.topleft)
+        game_window.blit(self.image, self.rect.topleft)
     def update(self):
         self.image = pygame.transform.rotate(e_tank_image, -math.degrees(self.angle))
         self.rect = self.image.get_rect(center=(self.x, self.y))
@@ -172,7 +175,7 @@ class Ball:
 
     def draw(self):
         if 0 <= self.x <= 256 and 0 <= self.y <= 256:
-            screen.blit(self.image, (self.x, self.y))
+            game_window.blit(self.image, (self.x, self.y))
             return
         Ball.balls.remove(self)
 
@@ -201,7 +204,7 @@ class EBall(Ball):
         super().update()
     def draw(self):
         if 0 <= self.x <= 256 and 0 <= self.y <= 256:
-            screen.blit(self.image, (self.x, self.y))
+            game_window.blit(self.image, (self.x, self.y))
             return
         EBall.balls.remove(self)
     def check_collision(self, enemy):
@@ -210,68 +213,163 @@ class EBall(Ball):
             result.update(game.score)
             result.mode = True
 
-# ビームクラスの定義
-class Beam:
-    beams = []
+class Laser:
+    lasers = []
+    COLOR = (0, 192, 255)
     def __init__(self, x, y, angle):
         self.x, self.y = x, y
         self.angle = angle
-        self.length = 0
         self.max_length = 384
-        self.life = 36  # ビームの寿命（フレーム数）
-        self.alpha = 255  # 初期の透明度
-        self.get_rect()
-        Beam.beams.append(self)
-    
-    def update(self):
-        self.get_rect()
-        if self.length < self.max_length:
-            self.length += 30
-        self.life -= 1
-        if self.life < 50:  # 寿命の半分を過ぎたら徐々に透明にする
-            self.alpha = int(255 * (self.life / 50))
-    
-    def draw(self, ):
-        if self.life <= 0:
-            Beam.beams.remove(self)
-        end_pos = (self.x + self.length * math.cos(self.angle),
-                   self.y + self.length * math.sin(self.angle))
-        beam_surface = pygame.Surface((256, 256), pygame.SRCALPHA)
-        # 青白い発光を描画
-        pygame.draw.line(beam_surface, (0, 192, 255, self.alpha // 1.5), (self.x, self.y), end_pos, 15)
-        # 白いビームを描画
-        pygame.draw.line(beam_surface, (255, 255, 255, self.alpha), (self.x, self.y), end_pos, 5)
-        screen.blit(beam_surface, (0, 0))
+        self.s_pos = (self.x, self.y)
+        self.e_pos = (self.x + self.max_length * math.cos(self.angle),
+                      self.y + self.max_length * math.sin(self.angle))
+        self.rect = pygame.Rect(self.x, self.y-32, WIDTH, 64)
+        self.width = 8
+        Laser.lasers.append(self)
+        self.count = 0
+        self.mode = 'charge'
 
-    def get_rect(self):
-        self.rect = pygame.Rect(self.x-8 + self.length * math.cos(self.angle),
-                     self.y-8 + self.length * math.sin(self.angle),
-                     16, 16)
+        self.a = (self.e_pos[1]-self.s_pos[1])/(self.e_pos[0]-self.s_pos[0])
+        self.a = max(min(self.a, 2147483637), -2147483637)
+        self.b = self.s_pos[1] - self.a * self.s_pos[0]
     
+    def charge(self):
+        if self.width:
+            pygame.draw.line(game_window, (255, 255, 255), self.s_pos, self.e_pos, self.width)
+            x, y = self.s_pos
+            ex, ey = self.e_pos
+            for _ in range(2):
+                diff = random.randint(-self.width//2, self.width//2)
+                pygame.draw.line(game_window, Laser.COLOR, 
+                                 (x-int(diff*math.sin(self.angle)), y+int(diff*math.cos(self.angle))), 
+                                 (ex-int(diff*math.sin(self.angle)), ey+int(diff*math.cos(self.angle))), 
+                                 1)
+            #ランダムにパーティクルを描画
+            diff = self.width * 4
+            for _ in range(50):
+                game_window.set_at((random.randint(int(x-diff), int(x+diff)), random.randint(int(y-diff), int(y+diff))), random.choice([(255, 255, 255), Laser.COLOR]))
+            for _ in range(300):
+                if int(x) <= int(ex):
+                    rx = random.randint(int(x), int(ex))
+                else:
+                    rx = random.randint(int(ex), int(x))
+                ry = int(rx * self.a + self.b)
+                diff = random.randint(-self.width, self.width)
+                game_window.set_at((rx-int(diff*math.sin(self.angle)), ry+int(diff*math.cos(self.angle))), random.choice([(255, 255, 255), Laser.COLOR]))
+            self.width -= 1
+            return  
+
+        self.width = 16
+        self.count = 0
+        self.mode = 'beam'
+    
+    def beam(self):
+        if self.count <= 10:
+            return
+        s_pos = self.s_pos
+        e_pos = self.e_pos
+        
+        global gw_pos
+        gw_pos = (random.randint(-3, 3), random.randint(-3, 3))
+        x, y = s_pos
+        ex, ey = e_pos
+
+        pygame.draw.line(game_window, (255, 255, 255), (x, y), (ex, ey), self.width)
+        # yの方がsin、x方がcosでずらす
+        diff = self.width//2
+        pygame.draw.line(game_window, Laser.COLOR, 
+                         (x-int((-diff+1)*math.sin(self.angle)), y+int((-diff+1)*math.cos(self.angle))), 
+                         (ex-int((-diff+1)*math.sin(self.angle)), ey+int((-diff+1)*math.cos(self.angle))), 
+                         2)
+        pygame.draw.line(game_window, Laser.COLOR, 
+                         (x-int((diff-1)*math.sin(self.angle)), y+int((diff-1)*math.cos(self.angle))), 
+                         (ex-int((diff-1)*math.sin(self.angle)), ey+int((diff-1)*math.cos(self.angle))), 
+                         2)
+        for _ in range(5):
+            r = random.randint(-self.width//2, self.width//2)
+            pygame.draw.line(game_window, Laser.COLOR, 
+                (x-int(r*math.sin(self.angle)), y+int(r*math.cos(self.angle))), 
+                (ex-int(r*math.sin(self.angle)), ey+int(r*math.cos(self.angle))), 
+                 1)
+        self.check_collision()
+        if self.count == 40:
+            gw_pos = (0, 0)
+            self.width = 8
+            self.mode = 'finish'
+    def finish(self):
+        if self.width:
+            pygame.draw.line(game_window, (255, 255, 255), self.s_pos, self.e_pos, self.width)
+            x, y = self.s_pos
+            ex, ey = self.e_pos
+            for _ in range(2):
+                r = random.randint(-self.width//2, self.width//2)
+                pygame.draw.line(game_window, Laser.COLOR, (x+r, y+r), (ex+r, ey+r), 1)
+            #ランダムにパーティクルを描画
+            x, y = self.s_pos
+            ex, ey = self.e_pos
+            r = self.width * 4
+            for _ in range(300):
+                if int(x) <= int(ex):
+                    rx = random.randint(int(x), int(ex))
+                else:
+                    rx = random.randint(int(ex), int(x))
+                ry = rx * self.a + self.b
+                diff = random.randint(-self.width, self.width)
+                game_window.set_at((int(rx-diff*math.sin(self.angle)), int(ry+diff*math.cos(self.angle))), random.choice([(255, 255, 255), Laser.COLOR]))
+            self.width -= 2
+            return
+
+        Laser.lasers.remove(self)
+
     def check_collision(self):
         for enemy in ETank.tanks:
-            if self.rect.colliderect(enemy.rect):
+            if self.colliderect(enemy.rect):
                 ETank.tanks.remove(enemy)
                 game.score+=300
         for e_ball in EBall.balls:
-            if self.rect.colliderect(e_ball.rect):
+            if self.colliderect(e_ball.rect):
                 EBall.balls.remove(e_ball)
+    
+    def colliderect(self, rect):
+        def point_to_segment_distance(px, py, x1, y1, x2, y2):
+            # 線分ABのベクトル
+            dx = x2 - x1
+            dy = y2 - y1
 
-class Shake:
-    def __init__(self):
-        self.score = 0
-        self.shake_duration = 0
-        self.shake_offset = (0, 0)
-    
-    def start_shake(self, duration):
-        self.shake_duration = duration
-    
-    def update_shake(self):
-        if self.shake_duration > 0:
-            self.shake_duration -= 1
-            self.shake_offset = (random.randint(-5, 5), random.randint(-5, 5))
-        else:
-            self.shake_offset = (0, 0)
+            if dx == dy == 0:
+                # AとBが同じ点
+                return math.hypot(px - x1, py - y1)
+
+            # 線分上の最近点を求めるためのt（0 <= t <= 1）
+            t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)
+            t = max(0, min(1, t))
+
+            # 最近点の座標
+            nearest_x = x1 + t * dx
+            nearest_y = y1 + t * dy
+
+            # 点と最近点の距離
+            return math.hypot(px - nearest_x, py - nearest_y)
+
+        point = ([rect.x, rect.y],
+                 [rect.x+rect.width, rect.y],
+                 [rect.x+rect.width, rect.y+rect.height],
+                 [rect.x, rect.y+rect.height]
+                 )
+        for p in point:
+            if point_to_segment_distance(p[0], p[1], self.s_pos[0], self.s_pos[1], self.e_pos[0], self.e_pos[1]) <= self.width//2:
+                return True
+
+        return False
+
+    def draw(self):
+        self.count += 1
+        if self.mode == 'charge':
+            self.charge()
+        elif self.mode == 'beam':
+            self.beam()
+        elif self.mode == 'finish':
+            self.finish()
 
 class Game:
     def __init__(self):
@@ -284,23 +382,13 @@ class Game:
         ETank.tanks = []
         EBall.balls = []
         Ball.balls = []
-        Beam.beams = []
+        Laser.lasers = []
 
         self.shake_duration = 0
         self.shake_offset = (0, 0)
-        
-    def start_shake(self, duration):
-        self.shake_duration = duration
-    
-    def update_shake(self):
-        if self.shake_duration > 0:
-            self.shake_duration -= 1
-            self.shake_offset = (random.randint(-2, 2), random.randint(-2, 2))
-        else:
-            self.shake_offset = (0, 0)
             
     def process(self):
-        screen.fill((255, 224, 160))
+        game_window.fill((255, 224, 160))
         game.score += 0.5
         if time.time() - self.last_time >= self.interval:
             ETank(random.randint(8, 248), random.randint(8, 248), self.tank.x, self.tank.y)
@@ -331,7 +419,6 @@ class Game:
                 if fire_button.pressed(mouse_x, mouse_y):
                     self.tank.fire()
                     
-        self.update_shake()
         mouse_x, mouse_y = pygame.mouse.get_pos()
         stick.update(mouse_x, mouse_y)
         gauge.update(self.tank.ball/5)
@@ -350,11 +437,6 @@ class Game:
             i.update()
             i.draw()
             i.check_collision(self.tank)
-        # ビームの更新と描画
-        for i in Beam.beams:
-            i.update()
-            i.draw()
-            i.check_collision()
         stick.draw()
         if self.tank.ball:
             shoot_button.draw()
@@ -366,8 +448,11 @@ class Game:
             fire_dummy.draw()
         gauge.draw()
         text = font.render(f'Score:{int(self.score)}', True, (0, 0, 0))
+        for l in copy.copy(Laser.lasers):
+            l.draw()
+        screen.fill((0, 0, 0))
+        screen.blit(game_window, gw_pos)
         screen.blit(text, (184, 8))
-        screen.blit(screen, self.shake_offset)
 class Result:
     def __init__(self, score):
         self.font = pygame.font.SysFont('', 32)
@@ -381,7 +466,7 @@ class Result:
             self.high_score = score
     def show(self):
         global game
-        screen.fill((255, 224, 160))
+        game_window.fill((255, 224, 160))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -465,13 +550,14 @@ class Result:
         text2 = self.font.render(f'HighScore:{self.high_score:.0f}', True, (0, 0, 0))
         text3 = self.font.render('Touch To Restart', True, (0, 0, 0))
         text_post = self.font_jp.render('XでPost(左上にリンクが出ます)', True, (0, 0, 0))
-        screen.blit(text, (32, 32))
-        screen.blit(text2, (32, 64))
-        screen.blit(text_post, (32, 96))
-        screen.blit(text_post, (33, 96))
-        screen.blit(text_post, (32, 97))
-        screen.blit(text_post, (33, 97))
-        screen.blit(text3, (32, 216))
+        game_window.blit(text, (32, 32))
+        game_window.blit(text2, (32, 64))
+        game_window.blit(text_post, (32, 96))
+        game_window.blit(text_post, (33, 96))
+        game_window.blit(text_post, (32, 97))
+        game_window.blit(text_post, (33, 97))
+        game_window.blit(text3, (32, 216))
+        screen.blit(game_window, (0, 0))
 async def main():
     while True:
         if game.mode:
