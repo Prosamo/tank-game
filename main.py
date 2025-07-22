@@ -424,35 +424,28 @@ class Laser:
         elif self.mode == 'finish':
             self.__finish()
 
-class Finger(list):
+class Finger:
     fingers = []
 
     # 一番近い座標の指を返す
     @classmethod
-    def search(cls, x, y):
-        if not cls.fingers:
-            return None
-        min_diff = None
-        same = None
-        for i, f in enumerate(Finger.fingers):
-            diff = math.hypot(x - f[0], y - f[1])
-            if min_diff is None or diff < min_diff:
-                min_diff = diff
-                same = i
-            if diff == 0:
-                    break
-        return Finger.fingers[same]
+    def search(cls, id):
+        for f in cls.fingers:
+            if f.id == id:
+                return f
+        return None
     
     @classmethod
     def reset(cls):
         Finger.fingers = []
 
-    def __init__(self, x, y):
-        super().__init__([x, y])
+    def __init__(self, id, x, y):
+        self.id = id
+        self.x, self.y = x, y
         Finger.fingers.append(self)
 
     def update(self, x, y):
-        self[0], self[1] = x, y
+        self.x, self.y = x, y
     
     def remove(self):
         Finger.fingers.remove(self)
@@ -492,25 +485,27 @@ class Game:
             
             # マルチタッチ対応
             if event.type == pygame.FINGERDOWN:
-                finger_x, finger_y = event.x*WIDTH, event.y*HEIGHT
-                Finger(finger_x, finger_y)
+                finger_id, finger_x, finger_y = event.finger_id, event.x*WIDTH, event.y*HEIGHT
+                Finger(finger_id, finger_x, finger_y)
                 if shoot_button.pressed(finger_x, finger_y):
                     self.tank.shoot()
                 if fire_button.pressed(finger_x, finger_y):
                     self.tank.fire()
             elif event.type == pygame.FINGERMOTION:
-                finger_x, finger_y = event.x*WIDTH, event.y*HEIGHT
-                finger = Finger.search(finger_x, finger_y)
-                finger.update(finger_x, finger_y)
+                finger_id, finger_x, finger_y = event.finger_id, event.x*WIDTH, event.y*HEIGHT
+                finger = Finger.search(finger_id)
+                if finger is not None:
+                    finger.update(finger_x, finger_y)
             elif event.type == pygame.FINGERUP:
-                finger_x, finger_y = event.x*WIDTH, event.y*HEIGHT
-                finger = Finger.search(finger_x, finger_y)
-                finger.remove()
+                finger_id = event.finger_id
+                finger = Finger.search(finger_id)
+                if finger is not None:
+                    finger.remove()
         
         # スティック操での移動処理
-        for pos in Finger.fingers:
-            if pos[0] <= WIDTH//2:
-                stick.update(pos)
+        for f in Finger.fingers:
+            if f.x <= WIDTH//2:
+                stick.update([f.x, f.y])
                 self.tank.update(stick.angle)
                 self.tank.move()
                 break
