@@ -203,12 +203,14 @@ class Ball:
         self.x += self.speed * math.cos(self.angle)
         self.y += self.speed * math.sin(self.angle)
         self.rect = self.image.get_rect(center=(self.x, self.y))
+        self.go_out()
+    
+    def go_out(self):
+        if self.x <= 0 or WIDTH <= self.x or self.y <= 0 or HEIGHT <= self.y:
+            Ball.balls.remove(self)
 
     def draw(self):
-        if 0 <= self.x <= 256 and 0 <= self.y <= 256:
-            game_window.blit(self.image, (self.x, self.y))
-            return
-        Ball.balls.remove(self)
+        game_window.blit(self.image, (self.x, self.y))
 
     def check_collision(self):
         for enemy in copy.copy(ETank.tanks):
@@ -221,7 +223,6 @@ class Ball:
                     pass
                 game.score+=300
                 break
-
 
 class EBall(Ball):
     balls = []
@@ -249,11 +250,12 @@ class EBall(Ball):
         EBall.balls.append(self)
     def update(self):
         super().update()
+
+    def go_out(self):
+        if self.x <= 0 or WIDTH <= self.x or self.y <= 0 or HEIGHT <= self.y:
+            EBall.balls.remove(self)
     def draw(self):
-        if 0 <= self.x <= 256 and 0 <= self.y <= 256:
-            game_window.blit(self.image, (self.x, self.y))
-            return
-        EBall.balls.remove(self)
+        game_window.blit(self.image, (self.x, self.y))
     def check_collision(self, enemy):
         if self.rect.colliderect(enemy.rect):
             game.mode = False
